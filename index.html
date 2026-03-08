@@ -42,7 +42,6 @@
 </select>
 </div>
 
-
 <div class="filter-item">
 <label>Flowering month</label>
 <select id="flowerMonth">
@@ -61,7 +60,6 @@
 <option value="Dec">December</option>
 </select>
 </div>
-
 
 <div class="filter-item">
 <label>Seed collection month</label>
@@ -82,7 +80,6 @@
 </select>
 </div>
 
-
 <div class="filter-item">
 <label>Family</label>
 <select id="familyFilter">
@@ -90,71 +87,54 @@
 </select>
 </div>
 
-
 <div class="filter-item full-width">
-
 <label>
 <input type="checkbox" id="bothDataFilter">
-Only show species with both flowering AND seed data
+Only show species with both flowering and seed data
 </label>
-
 </div>
 
 </div>
-
 
 <div class="filter-actions">
-
-<button onclick="applyFilters()" class="btn primary">
-Apply Filters
-</button>
-
-<button onclick="resetFilters()" class="btn secondary">
-Reset
-</button>
-
-<button onclick="filterCurrentMonth()" class="btn secondary">
-🌸 What's flowering now?
-</button>
-
+<button onclick="applyFilters()" class="btn primary">Apply Filters</button>
+<button onclick="resetFilters()" class="btn secondary">Reset</button>
 </div>
 
 </div>
-
 
 
 <div class="data-source-toggle card">
 
-<div class="dataset-selector" style="display:flex;align-items:center;gap:10px;justify-content:center">
+<div class="dataset-selector" style="display:flex;align-items:center;gap:10px;justify-content:center;">
 
-<label>Dataset:</label>
+<label>Select Dataset:</label>
 
-<select id="datasetSelect" onchange="changeDataset()">
-
-<option value="aus_native_phenology_complete.csv">
-Complete Dataset
-</option>
-
-<option value="sample_phenology_data.csv">
-Sample Data
-</option>
-
-<option value="expanded_australian_phenology_dataset.csv">
-Expanded Sample Data
-</option>
-
-<option value="australian_plant_phenology_v2.csv">
-Sample Data v2
-</option>
-
+<select id="datasetSelect">
+<option value="aus_native_phenology_complete.csv">Complete Dataset</option>
+<option value="sample_phenology_data.csv">Sample Data</option>
+<option value="expanded_australian_phenology_dataset.csv">Expanded Sample</option>
+<option value="australian_plant_phenology_v2.csv">Sample v2</option>
 <option value="My_Compiled_Database.csv">My Compiled Database</option>
+</select>
 
+<button onclick="changeDataset()" class="btn secondary">Load Dataset</button>
+
+</div>
+
+</div>
+
+
+<div class="card">
+
+<label><strong>Chart display:</strong></label>
+
+<select id="chartMode" onchange="updateCharts()">
+<option value="total">Totals</option>
+<option value="percent">Percent</option>
 </select>
 
 </div>
-
-</div>
-
 
 
 <div class="stats card">
@@ -164,80 +144,42 @@ Sample Data v2
 <span id="speciesCount" class="stat-value">0</span>
 </div>
 
-<div class="stat-item">
-<span class="stat-label">Recommended seed collection:</span>
-<span id="seedRecommendation" class="stat-value">—</span>
 </div>
 
-</div>
-
-<div class="card chart-toggle">
-<label><strong>Chart display:</strong></label>
-<select id="chartMode" onchange="updateCharts()">
-<option value="total">Total species</option>
-<option value="percent">Percentage</option>
-</select>
-</div>
 
 <div class="dashboard">
 
 <div class="card calendar-card">
-
-<h3>📅 Flowering Phenology</h3>
-
+<h3>Flowering Calendar</h3>
 <div class="chart-container">
 <canvas id="flowerChart"></canvas>
 </div>
-
-<p class="chart-note">
-Percentage of species flowering each month
-</p>
-
 </div>
 
-
 <div class="card calendar-card">
-
-<h3>🌱 Seed Phenology</h3>
-
+<h3>Seed Collection Calendar</h3>
 <div class="chart-container">
 <canvas id="seedChart"></canvas>
 </div>
-
-<p class="chart-note">
-Percentage of species with collectable seed
-</p>
-
 </div>
 
 </div>
-
 
 
 <div class="card">
 
-<h3>📋 Species List</h3>
+<h3>Species List</h3>
 
 <div class="table-controls">
-
-<input
-type="text"
-id="searchInput"
-placeholder="Search species..."
-onkeyup="applyFilters()"
->
-
+<input type="text" id="searchInput" placeholder="Search species..." onkeyup="applyFilters()">
 <span id="resultCount">0 species</span>
-
 </div>
-
 
 <div class="table-container">
 
 <table id="results">
 
 <thead>
-
 <tr>
 <th onclick="sortTable(0)">Scientific name</th>
 <th onclick="sortTable(1)">Common name</th>
@@ -246,7 +188,6 @@ onkeyup="applyFilters()"
 <th>Flowering months</th>
 <th>Seed months</th>
 </tr>
-
 </thead>
 
 <tbody id="tableBody"></tbody>
