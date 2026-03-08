@@ -34,12 +34,120 @@ h1 {
     font-size: 1.1em;
 }
 
+/* Loading Overlay */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #2e7d32;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-message {
+    font-size: 1.2em;
+    color: #2e7d32;
+    font-weight: 600;
+}
+
+/* Error Toast */
+.error-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #f44336;
+    color: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.error-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+.error-close:hover {
+    opacity: 0.8;
+}
+
+/* Tooltips */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 200px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    padding: 5px;
+    border-radius: 6px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -100px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.85em;
+    pointer-events: none;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Cards */
 .card {
     background: white;
     border-radius: 8px;
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .filters {
@@ -71,6 +179,13 @@ h1 {
     border: 1px solid #ccc;
     border-radius: 4px;
     font-size: 1em;
+    transition: border-color 0.3s;
+}
+
+.filter-item select:focus,
+.filter-item input:focus {
+    outline: none;
+    border-color: #2e7d32;
 }
 
 .filter-item.full-width {
@@ -81,6 +196,14 @@ h1 {
     display: flex;
     gap: 10px;
     margin-top: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.filter-indicator {
+    font-size: 0.9em;
+    color: #2e7d32;
+    font-weight: 600;
 }
 
 .btn {
@@ -90,6 +213,7 @@ h1 {
     cursor: pointer;
     font-size: 1em;
     font-weight: 600;
+    transition: all 0.3s ease;
 }
 
 .btn.primary {
@@ -97,8 +221,18 @@ h1 {
     color: white;
 }
 
+.btn.primary:hover {
+    background-color: #1b5e20;
+    transform: translateY(-2px);
+}
+
 .btn.secondary {
     background-color: #e0e0e0;
+}
+
+.btn.secondary:hover {
+    background-color: #d0d0d0;
+    transform: translateY(-2px);
 }
 
 .stats {
@@ -139,13 +273,31 @@ h1 {
     display: flex;
     justify-content: space-between;
     margin-bottom: 15px;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
-.table-controls input {
-    padding: 8px;
+.search-wrapper {
+    flex-grow: 1;
+    max-width: 300px;
+}
+
+.search-wrapper input {
+    padding: 8px 12px;
     border: 1px solid #ccc;
     border-radius: 4px;
-    width: 300px;
+    width: 100%;
+    font-size: 1em;
+}
+
+.result-badge {
+    background-color: #2e7d32;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 600;
 }
 
 /* SCROLLABLE TABLE */
@@ -171,6 +323,11 @@ th {
     top: 0;
     z-index: 10;
     cursor: pointer;
+    user-select: none;
+}
+
+th:hover {
+    background-color: #1b5e20;
 }
 
 td {
@@ -186,28 +343,45 @@ tr:hover {
     background-color: #f1f8e9;
 }
 
-.month-cell {
-    font-size: 0.85em;
-    color: #555;
+.table-footer {
+    margin-top: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.chart-toggle {
-    margin-bottom: 10px;
+.loading-time {
+    color: #666;
+    font-size: 0.9em;
 }
 
+/* Responsive Design */
 @media (max-width: 768px) {
-
-.dashboard {
-grid-template-columns: 1fr;
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-wrapper {
+        max-width: 100%;
+    }
+    
+    .tooltip .tooltiptext {
+        width: 150px;
+        margin-left: -75px;
+    }
 }
 
-.table-controls {
-flex-direction: column;
-gap: 10px;
+/* Animation for new data */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-.table-controls input {
-width: 100%;
-}
-
+#tableBody tr {
+    animation: fadeIn 0.3s ease;
 }
