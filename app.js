@@ -8,9 +8,9 @@ let seedChart;
 
 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-document.addEventListener('DOMContentLoaded', loadData);
-
-
+document.addEventListener('DOMContentLoaded', function(){
+    loadData();
+});
 
 function loadData(){
 
@@ -26,19 +26,7 @@ download:true,
 
 complete:function(results){
 
-speciesData = results.data.filter(r => r.scientific_name);
-
-speciesData = speciesData.map(row=>{
-
-row.flowerMonths = months.filter(m => row['flower_'+m] == 1);
-row.seedMonths = months.filter(m => row['seed_'+m] == 1);
-
-row.hasFlower = row.flowerMonths.length > 0;
-row.hasSeed = row.seedMonths.length > 0;
-
-return row;
-
-});
+speciesData = results.data.filter(row => row.scientific_name);
 
 filteredData = [...speciesData];
 
@@ -52,8 +40,6 @@ updateUI();
 
 }
 
-
-
 function changeDataset(){
 
 currentDataset = document.getElementById('datasetSelect').value;
@@ -62,26 +48,22 @@ loadData();
 
 }
 
-
-
 function populateFamilyFilter(){
 
-const families = [...new Set(
-speciesData.map(r=>r.family).filter(f=>f)
-)].sort();
+const families =
+[...new Set(speciesData.map(row=>row.family).filter(Boolean))].sort();
 
 const select = document.getElementById('familyFilter');
 
-while(select.options.length>1){
+while(select.options.length > 1){
 select.remove(1);
 }
 
-families.forEach(f=>{
+families.forEach(family=>{
 
-let option=document.createElement('option');
-
-option.value=f;
-option.textContent=f;
+const option = document.createElement('option');
+option.value = family;
+option.textContent = family;
 
 select.appendChild(option);
 
@@ -89,34 +71,41 @@ select.appendChild(option);
 
 }
 
-
-
 function applyFilters(){
 
-const state=document.getElementById('stateFilter').value;
-const flowerMonth=document.getElementById('flowerMonth').value;
-const seedMonth=document.getElementById('seedMonth').value;
-const family=document.getElementById('familyFilter').value;
-const search=document.getElementById('searchInput').value.toLowerCase();
-const both=document.getElementById('bothDataFilter').checked;
+const state = document.getElementById('stateFilter').value;
+const flowerMonth = document.getElementById('flowerMonth').value;
+const seedMonth = document.getElementById('seedMonth').value;
+const family = document.getElementById('familyFilter').value;
+const both = document.getElementById('bothDataFilter').checked;
+const search = document.getElementById('searchInput').value.toLowerCase();
 
 filteredData = speciesData.filter(row=>{
 
-if(state && !row.state?.includes(state)) return false;
+if(state && row.state !== state) return false;
 
-if(flowerMonth && !row.flowerMonths.includes(flowerMonth)) return false;
+if(flowerMonth && row['flower_'+flowerMonth] !== 1) return false;
 
-if(seedMonth && !row.seedMonths.includes(seedMonth)) return false;
+if(seedMonth && row['seed_'+seedMonth] !== 1) return false;
 
 if(family && row.family !== family) return false;
 
-if(both && (!row.hasFlower || !row.hasSeed)) return false;
+if(both){
+
+let hasFlower = months.some(m => row['flower_'+m] === 1);
+let hasSeed = months.some(m => row['seed_'+m] === 1);
+
+if(!hasFlower || !hasSeed) return false;
+
+}
 
 if(search){
+
 if(
 !row.scientific_name?.toLowerCase().includes(search) &&
 !row.common_name?.toLowerCase().includes(search)
 ) return false;
+
 }
 
 return true;
@@ -127,8 +116,6 @@ updateUI();
 
 }
 
-
-
 function resetFilters(){
 
 document.getElementById('stateFilter').value='';
@@ -138,162 +125,172 @@ document.getElementById('familyFilter').value='';
 document.getElementById('searchInput').value='';
 document.getElementById('bothDataFilter').checked=false;
 
-filteredData=[...speciesData];
+filteredData = [...speciesData];
 
 updateUI();
 
 }
-
-
-
-function filterCurrentMonth(){
-
-const m = months[new Date().getMonth()];
-
-document.getElementById('flowerMonth').value=m;
-
-applyFilters();
-
-}
-
-
 
 function updateUI(){
 
 updateTable();
 updateCharts();
 updateStats();
-updateSeedPlanner();
 
 }
 
-
-
 function updateTable(){
 
-const table=document.getElementById('tableBody');
+const tableBody = document.getElementById('tableBody');
 
-table.innerHTML='';
+tableBody.innerHTML='';
 
-filteredData.slice(0,100).forEach(row=>{
+filteredData.forEach(row=>{
 
-const tr=document.createElement('tr');
+const tr = document.createElement('tr');
+
+const flowerMonths = getActiveMonths(row,'flower');
+const seedMonths = getActiveMonths(row,'seed');
 
 tr.innerHTML=`
 
 <td><i>${row.scientific_name}</i></td>
-
 <td>${row.common_name || '-'}</td>
-
 <td>${row.family || '-'}</td>
-
 <td>${row.state || 'Australia'}</td>
-
-<td>${formatMonths(row.flowerMonths)}</td>
-
-<td>${formatMonths(row.seedMonths)}</td>
+<td class="month-cell">${formatMonths(flowerMonths)}</td>
+<td class="month-cell">${formatMonths(seedMonths)}</td>
 
 `;
 
-table.appendChild(tr);
+tableBody.appendChild(tr);
 
 });
 
 document.getElementById('resultCount').textContent =
-`${filteredData.length} species`;
+filteredData.length + " species";
 
 }
 
+function getActiveMonths(row,prefix){
 
+return months.filter(m => row[prefix+'_'+m] === 1);
+
+}
 
 function formatMonths(arr){
 
-if(arr.length==0) return '—';
-
-if(arr.length==12) return 'All year';
+if(arr.length===0) return '—';
 
 return arr.join(', ');
 
 }
 
-
-
 function updateCharts(){
+
+const mode = document.getElementById('chartMode').value;
 
 const flowerCounts = months.map(m=>{
 
-const c = filteredData.filter(r=>r.flowerMonths.includes(m)).length;
+let count =
+filteredData.filter(row => row['flower_'+m] === 1).length;
 
-return filteredData.length ? (c/filteredData.length*100).toFixed(1) : 0;
+if(mode === "percent"){
+
+return filteredData.length
+? ((count / filteredData.length)*100).toFixed(1)
+: 0;
+
+}
+
+return count;
 
 });
 
 const seedCounts = months.map(m=>{
 
-const c = filteredData.filter(r=>r.seedMonths.includes(m)).length;
+let count =
+filteredData.filter(row => row['seed_'+m] === 1).length;
 
-return filteredData.length ? (c/filteredData.length*100).toFixed(1) : 0;
+if(mode === "percent"){
+
+return filteredData.length
+? ((count / filteredData.length)*100).toFixed(1)
+: 0;
+
+}
+
+return count;
 
 });
-
 
 if(flowerChart) flowerChart.destroy();
 if(seedChart) seedChart.destroy();
 
+const yLabel =
+mode === "percent"
+? "Percent of species (%)"
+: "Number of species";
 
 flowerChart = new Chart(
-document.getElementById('flowerChart'),
-{
 
+document.getElementById('flowerChart'),
+
+{
 type:'bar',
 
 data:{
-
 labels:months,
-
 datasets:[{
-
-label:'% flowering',
-
 data:flowerCounts,
-
 backgroundColor:'rgba(76,175,80,0.7)'
-
 }]
+},
+
+options:{
+plugins:{legend:{display:false}},
+scales:{
+y:{
+beginAtZero:true,
+title:{display:true,text:yLabel}
+}
+}
+}
 
 }
 
-});
-
-
+);
 
 seedChart = new Chart(
-document.getElementById('seedChart'),
-{
 
+document.getElementById('seedChart'),
+
+{
 type:'bar',
 
 data:{
-
 labels:months,
-
 datasets:[{
-
-label:'% seed ready',
-
 data:seedCounts,
-
 backgroundColor:'rgba(33,150,243,0.7)'
-
 }]
+},
+
+options:{
+plugins:{legend:{display:false}},
+scales:{
+y:{
+beginAtZero:true,
+title:{display:true,text:yLabel}
+}
+}
+}
 
 }
 
-});
+);
 
 }
-
-
 
 function updateStats(){
 
@@ -302,34 +299,14 @@ filteredData.length;
 
 }
 
+function sortTable(columnIndex){
 
+const keys = ['scientific_name','common_name','family','state'];
 
-function updateSeedPlanner(){
-
-const counts = months.map(m=>
-filteredData.filter(r=>r.seedMonths.includes(m)).length
+filteredData.sort((a,b)=>
+(a[keys[columnIndex]] || '')
+.localeCompare(b[keys[columnIndex]] || '')
 );
-
-let bestIndex = counts.indexOf(Math.max(...counts));
-
-let bestMonth = months[bestIndex];
-
-document.getElementById('seedRecommendation').textContent =
-bestMonth;
-
-}
-
-
-
-function sortTable(column){
-
-filteredData.sort((a,b)=>{
-
-const keys=['scientific_name','common_name','family','state'];
-
-return (a[keys[column]]||'').localeCompare(b[keys[column]]||'');
-
-});
 
 updateTable();
 
