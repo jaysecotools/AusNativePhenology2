@@ -147,9 +147,7 @@ Expanded Sample Data
 Sample Data v2
 </option>
 
-<option value="My_Compiled_Database.csv">
-My Compiled Database
-</option>
+<option value="My_Compiled_Database.csv">My Compiled Database</option>
 
 </select>
 
@@ -173,7 +171,13 @@ My Compiled Database
 
 </div>
 
-
+<div class="card chart-toggle">
+<label><strong>Chart display:</strong></label>
+<select id="chartMode" onchange="updateCharts()">
+<option value="total">Total species</option>
+<option value="percent">Percentage</option>
+</select>
+</div>
 
 <div class="dashboard">
 
