@@ -776,7 +776,7 @@ h1 {
     border: 2px dashed var(--border-color);
 }
 
-/* Footer */
+/* Footer - GitHub Pages compatible */
 .footer-simple {
     margin-top: 40px;
     margin-bottom: 100px;
@@ -784,25 +784,36 @@ h1 {
     border-top: 2px solid var(--accent-light);
     color: var(--text-secondary);
     font-size: 0.9rem;
-    text-align: center;
+    text-align: center !important;
     clear: both;
+    width: 100%;
+    display: block;
+    box-sizing: border-box;
 }
 
 .footer-simple p {
-    margin: 0;
+    margin: 0 auto;
     line-height: 1.5;
+    text-align: center !important;
+    width: 100%;
+    max-width: 100%;
+    padding: 0 15px;
+    box-sizing: border-box;
 }
 
 .footer-simple strong {
     color: var(--accent-primary);
+    font-weight: 600;
 }
 
 .footer-simple .copyright {
     color: var(--accent-primary);
     font-size: 0.85rem;
     margin-left: 8px;
+    display: inline-block;
 }
 
+/* Dark theme footer */
 .dark-theme .footer-simple,
 @media (prefers-color-scheme: dark) {
     .footer-simple {
@@ -810,9 +821,30 @@ h1 {
     }
 }
 
+/* High contrast mode */
 .high-contrast .footer-simple {
     border-top: 2px solid var(--border-color);
     color: var(--text-primary);
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .footer-simple {
+        margin-bottom: 80px;
+        font-size: 0.85rem;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-simple {
+        margin-bottom: 70px;
+        padding: 12px;
+    }
+    
+    .footer-simple p {
+        font-size: 0.8rem;
+    }
 }
 
 /* Touch-friendly */
