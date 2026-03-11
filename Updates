@@ -1,0 +1,252 @@
+The issue is that the dark mode button toggles the light-theme class, but we need to properly handle theme preferences. Here's the fix:
+
+Update the JavaScript theme functions:
+
+```javascript
+// Replace the existing theme functions with these:
+
+// Check system theme preference
+function checkSystemTheme() {
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Don't override if user has manually set a theme
+    if (!localStorage.getItem('theme-preference')) {
+        if (prefersDark) {
+            document.documentElement.classList.remove('light-theme');
+            document.documentElement.classList.remove('dark-theme');
+            // Let the CSS media query handle it
+        } else {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.classList.remove('dark-theme');
+        }
+    }
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only auto-switch if user hasn't set a manual preference
+        if (!localStorage.getItem('theme-preference')) {
+            if (e.matches) {
+                document.documentElement.classList.remove('light-theme');
+                document.documentElement.classList.remove('dark-theme');
+            } else {
+                document.documentElement.classList.add('light-theme');
+                document.documentElement.classList.remove('dark-theme');
+            }
+        }
+    });
+}
+
+// Toggle theme manually
+function toggleTheme() {
+    // Remove high contrast if active
+    if (document.documentElement.classList.contains('high-contrast')) {
+        document.documentElement.classList.remove('high-contrast');
+    }
+    
+    // Toggle between light, dark, and system default
+    const currentTheme = localStorage.getItem('theme-preference');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (!currentTheme || currentTheme === 'system') {
+        // First click: force light theme
+        document.documentElement.classList.add('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+        localStorage.setItem('theme-preference', 'light');
+    } else if (currentTheme === 'light') {
+        // Second click: force dark theme
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.add('dark-theme');
+        localStorage.setItem('theme-preference', 'dark');
+    } else if (currentTheme === 'dark') {
+        // Third click: back to system preference
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+        localStorage.setItem('theme-preference', 'system');
+    }
+    
+    // Update button text to show current mode
+    updateThemeButtonText();
+}
+
+// Update theme button text
+function updateThemeButtonText() {
+    const themeButton = document.querySelector('.theme-toggle');
+    if (!themeButton) return;
+    
+    const preference = localStorage.getItem('theme-preference') || 'system';
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    let modeText = '';
+    if (preference === 'light') {
+        modeText = '☀️ Light';
+    } else if (preference === 'dark') {
+        modeText = '🌑 Dark';
+    } else {
+        modeText = prefersDark ? '🌑 Dark (auto)' : '☀️ Light (auto)';
+    }
+    
+    themeButton.innerHTML = `🌓 ${modeText}`;
+}
+
+// Toggle high contrast
+function toggleContrast() {
+    document.documentElement.classList.toggle('high-contrast');
+    
+    // Update contrast button text
+    const contrastButton = document.querySelector('.contrast-toggle');
+    if (contrastButton) {
+        const isHighContrast = document.documentElement.classList.contains('high-contrast');
+        contrastButton.innerHTML = isHighContrast ? '👁️ High Contrast On' : '👁️ High Contrast Off';
+    }
+}
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', () => {
+    // Load saved theme preference
+    const savedTheme = localStorage.getItem('theme-preference');
+    if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+    } else if (savedTheme === 'dark') {
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.add('dark-theme');
+    } else {
+        // System default
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+    }
+    
+    // Load high contrast preference
+    const savedContrast = localStorage.getItem('high-contrast');
+    if (savedContrast === 'true') {
+        document.documentElement.classList.add('high-contrast');
+    }
+    
+    updateThemeButtonText();
+    updateContrastButtonText();
+    setupKeyboardShortcuts();
+    checkSystemTheme();
+    loadData();
+});
+
+// Update contrast button text
+function updateContrastButtonText() {
+    const contrastButton = document.querySelector('.contrast-toggle');
+    if (contrastButton) {
+        const isHighContrast = document.documentElement.classList.contains('high-contrast');
+        contrastButton.innerHTML = isHighContrast ? '👁️ High Contrast On' : '👁️ High Contrast Off';
+    }
+}
+
+// Save high contrast preference when toggled
+function toggleContrast() {
+    document.documentElement.classList.toggle('high-contrast');
+    const isHighContrast = document.documentElement.classList.contains('high-contrast');
+    localStorage.setItem('high-contrast', isHighContrast);
+    updateContrastButtonText();
+}
+```
+
+Update the CSS to properly handle dark theme:
+
+Add these dark theme variables to your CSS:
+
+```css
+/* Dark theme variables - add this after your light theme variables */
+.dark-theme {
+    --bg-primary: #1a2a1a;
+    --bg-card: #2a3a2a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --accent-primary: #4caf50;
+    --accent-light: #2a3a2a;
+    --accent-dark: #81c784;
+    --border-color: #4a5a4a;
+    --error-bg: #4a2a2a;
+    --error-text: #ff8a80;
+    --warning-bg: #4a3a2a;
+    --warning-text: #ffb74d;
+    --shadow-color: rgba(0,0,0,0.3);
+    --hover-bg: #3a4a3a;
+    --chart-flower: #66bb6a;
+    --chart-seed: #42a5f5;
+}
+
+/* Keep your existing media query for system dark mode */
+@media (prefers-color-scheme: dark) {
+    :root:not(.light-theme):not(.dark-theme) {
+        --bg-primary: #1a2a1a;
+        --bg-card: #2a3a2a;
+        --text-primary: #e0e0e0;
+        --text-secondary: #b0b0b0;
+        --accent-primary: #4caf50;
+        --accent-light: #2a3a2a;
+        --accent-dark: #81c784;
+        --border-color: #4a5a4a;
+        --error-bg: #4a2a2a;
+        --error-text: #ff8a80;
+        --warning-bg: #4a3a2a;
+        --warning-text: #ffb74d;
+        --shadow-color: rgba(0,0,0,0.3);
+        --hover-bg: #3a4a3a;
+        --chart-flower: #66bb6a;
+        --chart-seed: #42a5f5;
+    }
+}
+```
+
+Update the HTML theme buttons:
+
+```html
+<!-- Theme Controls -->
+<div class="theme-controls">
+    <button onclick="toggleTheme()" class="theme-toggle" aria-label="Toggle dark/light mode">🌓 Theme</button>
+    <button onclick="toggleContrast()" class="contrast-toggle" aria-label="Toggle high contrast mode">👁️ High Contrast</button>
+</div>
+```
+
+Also add this to your CSS to ensure the dark theme propagates properly:
+
+```css
+/* Ensure all components use CSS variables */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.4;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Make sure cards and other elements update */
+.card {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+/* Add smooth transitions for theme changes */
+* {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* But disable transitions for elements that shouldn't animate */
+.no-transition {
+    transition: none !important;
+}
+```
+
+What this fixes:
+
+1. Three-state theme toggle: Cycles through Light → Dark → System default
+2. Saves preferences in localStorage so they persist across page reloads
+3. Updates button text to show current mode
+4. Properly handles system preference as the default
+5. Separates dark theme into its own class for manual override
+6. Works alongside high contrast mode without conflicts
+
+Now the dark mode button should cycle through:
+
+· First click: Force light theme ☀️
+· Second click: Force dark theme 🌑
+· Third click: Back to system preference (auto)
+
+The contrast button works independently and can be combined with any theme!
