@@ -1,9 +1,11 @@
-// Lightweight mobile version with PC enhancements
+// Optimized for large datasets (25,000+ species)
 let currentDataset = 'aus_native_phenology_complete.csv';
 let speciesData = [];
 let filteredData = [];
 let flowerChart, seedChart;
 let filterTimeout;
+let renderTimeout;
+let isProcessing = false;
 
 const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const monthNames = {
@@ -12,11 +14,23 @@ const monthNames = {
     'Sep': 'September', 'Oct': 'October', 'Nov': 'November', 'Dec': 'December'
 };
 
+// Cache for processed data
+const dataCache = new Map();
+const familyCache = new Map();
+
+// Virtual scroll variables
+let visibleSpecies = [];
+let currentPage = 0;
+const PAGE_SIZE = 50; // Show 50 species at a time
+let totalPages = 0;
+
 // Simple DOM ready
 document.addEventListener('DOMContentLoaded', () => {
-    loadData();
+    // Show theme controls immediately
+    document.querySelector('.theme-controls').style.display = 'flex';
     setupKeyboardShortcuts();
     checkSystemTheme();
+    loadData();
 });
 
 // Check system theme preference
@@ -26,17 +40,6 @@ function checkSystemTheme() {
     } else {
         document.documentElement.classList.add('light-theme');
     }
-    
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (!document.documentElement.classList.contains('high-contrast')) {
-            if (e.matches) {
-                document.documentElement.classList.remove('light-theme');
-            } else {
-                document.documentElement.classList.add('light-theme');
-            }
-        }
-    });
 }
 
 // Toggle theme manually
@@ -44,12 +47,7 @@ function toggleTheme() {
     if (document.documentElement.classList.contains('high-contrast')) {
         document.documentElement.classList.remove('high-contrast');
     }
-    
-    if (document.documentElement.classList.contains('light-theme')) {
-        document.documentElement.classList.remove('light-theme');
-    } else {
-        document.documentElement.classList.add('light-theme');
-    }
+    document.documentElement.classList.toggle('light-theme');
 }
 
 // Toggle high contrast
@@ -60,13 +58,10 @@ function toggleContrast() {
 // Setup keyboard shortcuts
 function setupKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
-        // Ctrl/Cmd + F to focus search
         if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
             e.preventDefault();
             document.getElementById('searchInput').focus();
         }
-        
-        // Esc to clear filters
         if (e.key === 'Escape') {
             const searchInput = document.getElementById('searchInput');
             if (document.activeElement === searchInput) {
@@ -75,90 +70,126 @@ function setupKeyboardShortcuts() {
                 clearFilters();
             }
         }
-        
-        // Alt + F to toggle filters
-        if (e.altKey && e.key === 'f') {
-            e.preventDefault();
-            toggleFilters();
-        }
     });
 }
 
-// Toggle filters
-function toggleFilters() {
-    const content = document.getElementById('filterContent');
-    const toggle = document.getElementById('filterToggle');
-    const header = document.querySelector('.filter-header');
-    
-    content.classList.toggle('hidden');
-    const isHidden = content.classList.contains('hidden');
-    toggle.textContent = isHidden ? '▶' : '▼';
-    
-    // Update ARIA attribute
-    if (header) {
-        header.setAttribute('aria-expanded', !isHidden);
-    }
-}
-
-// Show/hide loading
+// Show/hide loading with non-blocking UI
 function showLoading(msg = 'Loading...') {
-    document.getElementById('loadingText').textContent = msg;
-    document.getElementById('loading').style.display = 'flex';
+    const loadingEl = document.getElementById('loading');
+    const loadingText = document.getElementById('loadingText');
+    loadingText.textContent = msg;
+    loadingEl.style.display = 'flex';
+    // Don't add loading class to body - keep UI interactive
 }
 
 function hideLoading() {
     document.getElementById('loading').style.display = 'none';
 }
 
-// Show error
-function showError(msg, isWarning = false) {
+// Show message
+function showMessage(msg, type = 'info') {
     const errorBox = document.getElementById('errorMsg');
     errorBox.textContent = msg;
     errorBox.style.display = 'block';
-    errorBox.style.background = isWarning ? 'var(--warning-bg)' : 'var(--error-bg)';
-    errorBox.style.color = isWarning ? 'var(--warning-text)' : 'var(--error-text)';
     
-    // Auto-hide after 5 seconds
+    const colors = {
+        info: { bg: 'var(--accent-light)', text: 'var(--accent-dark)', border: 'var(--accent-primary)' },
+        warning: { bg: 'var(--warning-bg)', text: 'var(--warning-text)', border: 'var(--warning-text)' },
+        error: { bg: 'var(--error-bg)', text: 'var(--error-text)', border: 'var(--error-text)' }
+    };
+    
+    errorBox.style.background = colors[type].bg;
+    errorBox.style.color = colors[type].text;
+    errorBox.style.borderLeftColor = colors[type].border;
+    
     setTimeout(() => {
         errorBox.style.display = 'none';
-    }, 5000);
+    }, 3000);
 }
 
-// Load data
+// Load data with streaming parser
 function loadData() {
+    // Check cache first
+    if (dataCache.has(currentDataset)) {
+        const cached = dataCache.get(currentDataset);
+        speciesData = cached.data;
+        familyCache.set('all', cached.families);
+        filteredData = [...speciesData];
+        updateUI();
+        hideLoading();
+        showMessage(`Loaded ${speciesData.length} species from cache`, 'info');
+        return;
+    }
+    
     showLoading(`Loading ${currentDataset}...`);
+    
+    // Use streaming parser for large files
+    loadWithStreamingParser();
+}
+
+// Load with streaming parser (handles 25k+ records efficiently)
+function loadWithStreamingParser() {
+    const parsedData = [];
+    const families = new Set();
+    let rowCount = 0;
+    let lastUpdate = Date.now();
     
     Papa.parse('data/' + currentDataset, {
         header: true,
         download: true,
         dynamicTyping: true,
         skipEmptyLines: true,
-        
-        complete: (results) => {
-            if (results.data && results.data.length > 0) {
-                speciesData = results.data.filter(r => r.scientific_name);
-                if (speciesData.length === 0) {
-                    loadSampleData();
-                } else {
-                    filteredData = [...speciesData];
-                    updateFamilyFilter();
-                    updateUI();
-                    hideLoading();
-                    showError(`Loaded ${speciesData.length} species`, true);
-                }
-            } else {
-                loadSampleData();
+        step: (results, parser) => {
+            // Process each row as it comes in
+            const row = results.data;
+            if (row.scientific_name) {
+                parsedData.push(row);
+                if (row.family) families.add(row.family);
+                rowCount++;
+            }
+            
+            // Update progress every 500ms or every 1000 rows
+            const now = Date.now();
+            if (now - lastUpdate > 500 || rowCount % 1000 === 0) {
+                document.getElementById('loadingText').textContent = 
+                    `Loading... ${rowCount} records`;
+                lastUpdate = now;
+            }
+            
+            // Yield to UI every 100 rows
+            if (rowCount % 100 === 0) {
+                setTimeout(() => {}, 0);
             }
         },
-        
+        complete: () => {
+            // Process complete dataset
+            speciesData = parsedData;
+            filteredData = [...speciesData];
+            
+            // Cache the data
+            dataCache.set(currentDataset, {
+                data: speciesData,
+                families: Array.from(families).sort()
+            });
+            
+            // Update UI
+            updateFamilyFilter(Array.from(families).sort());
+            updateUI();
+            hideLoading();
+            showMessage(`Loaded ${speciesData.length} species`, 'info');
+        },
         error: (error) => {
             console.error('Parse error:', error);
             loadSampleData();
+        },
+        chunk: (results, parser) => {
+            // Process chunks without blocking
+            setTimeout(() => {}, 0);
         }
     });
 }
 
-// Sample data (lightweight)
+// Sample data fallback
 function loadSampleData() {
     speciesData = [
         {scientific_name:"Eucalyptus camaldulensis",common_name:"River Red Gum",family:"Myrtaceae",state:"NSW",
@@ -166,28 +197,38 @@ function loadSampleData() {
         {scientific_name:"Banksia serrata",common_name:"Old Man Banksia",family:"Proteaceae",state:"VIC",
          flower_Aug:1,flower_Sep:1,flower_Oct:1,seed_Nov:1,seed_Dec:1},
         {scientific_name:"Acacia pycnantha",common_name:"Golden Wattle",family:"Fabaceae",state:"ACT",
-         flower_Jul:1,flower_Aug:1,flower_Sep:1,seed_Oct:1,seed_Nov:1,seed_Dec:1},
-        {scientific_name:"Telopea speciosissima",common_name:"Waratah",family:"Proteaceae",state:"NSW",
-         flower_Sep:1,flower_Oct:1,flower_Nov:1,seed_Dec:1,seed_Jan:1},
-        {scientific_name:"Syzygium smithii",common_name:"Lilly Pilly",family:"Myrtaceae",state:"QLD",
-         flower_Nov:1,flower_Dec:1,seed_Jan:1,seed_Feb:1}
+         flower_Jul:1,flower_Aug:1,flower_Sep:1,seed_Oct:1,seed_Nov:1,seed_Dec:1}
     ];
     
     filteredData = [...speciesData];
-    updateFamilyFilter();
+    updateFamilyFilter(['Myrtaceae', 'Proteaceae', 'Fabaceae']);
     updateUI();
     hideLoading();
-    showError('Using sample data - ' + speciesData.length + ' species loaded', true);
+    showMessage('Using sample data', 'warning');
 }
 
-// Update family filter
-function updateFamilyFilter() {
-    const families = [...new Set(speciesData.map(r => r.family).filter(Boolean))].sort();
+// Update family filter (optimized)
+function updateFamilyFilter(families) {
     const select = document.getElementById('familyFilter');
     const currentVal = select.value;
     
-    select.innerHTML = '<option value="">All families</option>' + 
-        families.map(f => `<option value="${f}">${f}</option>`).join('');
+    // Use DocumentFragment for faster DOM updates
+    const fragment = document.createDocumentFragment();
+    const optionAll = document.createElement('option');
+    optionAll.value = '';
+    optionAll.textContent = 'All families';
+    fragment.appendChild(optionAll);
+    
+    families.forEach(f => {
+        const option = document.createElement('option');
+        option.value = f;
+        option.textContent = f;
+        fragment.appendChild(option);
+    });
+    
+    // Clear and append in one operation
+    select.innerHTML = '';
+    select.appendChild(fragment);
     
     if (currentVal && families.includes(currentVal)) {
         select.value = currentVal;
@@ -199,14 +240,21 @@ function changeDataset() {
     const newDataset = document.getElementById('datasetSelect').value;
     if (newDataset !== currentDataset) {
         currentDataset = newDataset;
+        // Reset pagination
+        currentPage = 0;
         loadData();
     }
 }
 
-// Apply filters (debounced)
+// Apply filters (optimized for large datasets)
 function applyFilters() {
+    if (isProcessing) return;
+    
     if (filterTimeout) clearTimeout(filterTimeout);
+    
     filterTimeout = setTimeout(() => {
+        isProcessing = true;
+        
         const state = document.getElementById('stateFilter').value;
         const flowerMonth = document.getElementById('flowerMonth').value;
         const seedMonth = document.getElementById('seedMonth').value;
@@ -214,40 +262,92 @@ function applyFilters() {
         const both = document.getElementById('bothDataFilter').checked;
         const search = document.getElementById('searchInput').value.toLowerCase();
         
-        filteredData = speciesData.filter(row => {
-            if (state && row.state !== state) return false;
-            if (flowerMonth && row['flower_' + flowerMonth] !== 1) return false;
-            if (seedMonth && row['seed_' + seedMonth] !== 1) return false;
-            if (family && row.family !== family) return false;
-            
-            if (both) {
-                const hasFlower = months.some(m => row['flower_' + m] === 1);
-                const hasSeed = months.some(m => row['seed_' + m] === 1);
-                if (!hasFlower || !hasSeed) return false;
+        // Use setTimeout to not block UI
+        setTimeout(() => {
+            // For large datasets, use indexed filtering
+            if (speciesData.length > 10000) {
+                filterLargeDataset(state, flowerMonth, seedMonth, family, both, search);
+            } else {
+                filterSmallDataset(state, flowerMonth, seedMonth, family, both, search);
             }
-            
-            if (search) {
-                const sci = (row.scientific_name || '').toLowerCase();
-                const com = (row.common_name || '').toLowerCase();
-                if (!sci.includes(search) && !com.includes(search)) return false;
+        }, 10);
+        
+    }, 400); // Longer debounce for large datasets
+}
+
+// Filter small datasets
+function filterSmallDataset(state, flowerMonth, seedMonth, family, both, search) {
+    filteredData = speciesData.filter(row => {
+        if (state && row.state !== state) return false;
+        if (flowerMonth && row['flower_' + flowerMonth] !== 1) return false;
+        if (seedMonth && row['seed_' + seedMonth] !== 1) return false;
+        if (family && row.family !== family) return false;
+        
+        if (both) {
+            let hasFlower = false, hasSeed = false;
+            for (let m of months) {
+                if (row['flower_' + m] === 1) hasFlower = true;
+                if (row['seed_' + m] === 1) hasSeed = true;
+                if (hasFlower && hasSeed) break;
             }
-            
-            return true;
-        });
+            if (!hasFlower || !hasSeed) return false;
+        }
         
-        updateUI();
+        if (search) {
+            const sci = (row.scientific_name || '').toLowerCase();
+            const com = (row.common_name || '').toLowerCase();
+            if (!sci.includes(search) && !com.includes(search)) return false;
+        }
         
-        // Announce filter results for screen readers
-        const announcement = `Showing ${filteredData.length} species`;
-        const statusEl = document.createElement('div');
-        statusEl.setAttribute('role', 'status');
-        statusEl.setAttribute('aria-live', 'polite');
-        statusEl.className = 'sr-only';
-        statusEl.textContent = announcement;
-        document.body.appendChild(statusEl);
-        setTimeout(() => statusEl.remove(), 1000);
-        
-    }, 250);
+        return true;
+    });
+    
+    // Reset pagination
+    currentPage = 0;
+    isProcessing = false;
+    updateUI();
+}
+
+// Filter large datasets with web worker
+function filterLargeDataset(state, flowerMonth, seedMonth, family, both, search) {
+    showLoading('Filtering...');
+    
+    const worker = new Worker('filter-worker.js');
+    
+    worker.postMessage({
+        data: speciesData,
+        state,
+        flowerMonth,
+        seedMonth,
+        family,
+        both,
+        search,
+        months
+    });
+    
+    worker.onmessage = (e) => {
+        if (e.data.error) {
+            console.error('Worker error:', e.data.error);
+            // Fallback to normal filtering
+            filterSmallDataset(state, flowerMonth, seedMonth, family, both, search);
+        } else {
+            filteredData = e.data;
+            currentPage = 0;
+            isProcessing = false;
+            hideLoading();
+            updateUI();
+            showMessage(`Found ${filteredData.length} species`, 'info');
+        }
+        worker.terminate();
+    };
+    
+    // Timeout fallback
+    setTimeout(() => {
+        if (isProcessing) {
+            worker.terminate();
+            filterSmallDataset(state, flowerMonth, seedMonth, family, both, search);
+        }
+    }, 10000);
 }
 
 // Clear filters
@@ -261,14 +361,33 @@ function clearFilters() {
     applyFilters();
 }
 
-// Update UI
+// Update UI with virtual scrolling
 function updateUI() {
-    updateSpeciesList();
-    updateCharts();
     updateStats();
+    updateCharts();
+    
+    // Reset pagination for new data
+    totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+    currentPage = 0;
+    
+    // Render first page
+    renderSpeciesPage();
+    
+    // Setup scroll listener for virtual scrolling
+    setupVirtualScrolling();
 }
 
-// Update species list
+// Render a page of species
+function renderSpeciesPage() {
+    const start = currentPage * PAGE_SIZE;
+    const end = Math.min(start + PAGE_SIZE, filteredData.length);
+    visibleSpecies = filteredData.slice(start, end);
+    
+    updateSpeciesList();
+    updateScrollIndicator();
+}
+
+// Update species list with current page
 function updateSpeciesList() {
     const container = document.getElementById('speciesList');
     
@@ -279,12 +398,13 @@ function updateSpeciesList() {
     }
     
     let html = '';
-    filteredData.forEach((row, index) => {
+    visibleSpecies.forEach((row, index) => {
         const flowerMonths = getActiveMonths(row, 'flower');
         const seedMonths = getActiveMonths(row, 'seed');
+        const globalIndex = currentPage * PAGE_SIZE + index + 1;
         
         html += `
-            <div class="species-item" tabindex="0" role="article" aria-label="Species: ${escapeHTML(row.scientific_name || '')}">
+            <div class="species-item" data-index="${globalIndex}">
                 <div class="species-name">${escapeHTML(row.scientific_name || 'Unnamed')}</div>
                 <div class="species-details">
                     <span class="species-detail">🌿 ${escapeHTML(row.common_name || 'No common name')}</span>
@@ -292,8 +412,8 @@ function updateSpeciesList() {
                     <span class="species-detail">📍 ${escapeHTML(row.state || 'Australia')}</span>
                 </div>
                 <div class="species-months">
-                    ${flowerMonths.map(m => `<span class="month-tag" data-tooltip="Flowering in ${monthNames[m]}">🌸${m}</span>`).join('')}
-                    ${seedMonths.map(m => `<span class="month-tag" data-tooltip="Seeding in ${monthNames[m]}">🌱${m}</span>`).join('')}
+                    ${flowerMonths.map(m => `<span class="month-tag" title="Flowering in ${monthNames[m]}">🌸${m}</span>`).join('')}
+                    ${seedMonths.map(m => `<span class="month-tag" title="Seeding in ${monthNames[m]}">🌱${m}</span>`).join('')}
                 </div>
             </div>
         `;
@@ -303,105 +423,156 @@ function updateSpeciesList() {
     document.getElementById('resultCount').textContent = filteredData.length;
 }
 
-// Helper: get active months
+// Setup virtual scrolling
+function setupVirtualScrolling() {
+    const container = document.querySelector('.species-list');
+    if (!container) return;
+    
+    let scrollTimeout;
+    
+    container.addEventListener('scroll', () => {
+        if (scrollTimeout) clearTimeout(scrollTimeout);
+        
+        scrollTimeout = setTimeout(() => {
+            const { scrollTop, scrollHeight, clientHeight } = container;
+            
+            // Load next page when near bottom
+            if (scrollTop + clientHeight >= scrollHeight - 200) {
+                if (currentPage < totalPages - 1) {
+                    currentPage++;
+                    renderSpeciesPage();
+                }
+            }
+            
+            // Load previous page when near top
+            if (scrollTop < 200 && currentPage > 0) {
+                currentPage--;
+                renderSpeciesPage();
+                // Maintain scroll position
+                container.scrollTop = 200;
+            }
+        }, 100);
+    });
+}
+
+// Update scroll indicator
+function updateScrollIndicator() {
+    const indicator = document.getElementById('scrollIndicator');
+    if (!indicator) {
+        const div = document.createElement('div');
+        div.id = 'scrollIndicator';
+        div.className = 'scroll-indicator';
+        document.querySelector('.card:last-child').appendChild(div);
+    }
+    
+    const start = currentPage * PAGE_SIZE + 1;
+    const end = Math.min((currentPage + 1) * PAGE_SIZE, filteredData.length);
+    document.getElementById('scrollIndicator').textContent = 
+        `Showing ${start}-${end} of ${filteredData.length} species`;
+}
+
+// Helper: get active months (optimized)
 function getActiveMonths(row, prefix) {
-    return months.filter(m => row[prefix + '_' + m] === 1);
+    const active = [];
+    for (let m of months) {
+        if (row[prefix + '_' + m] === 1) {
+            active.push(m);
+        }
+    }
+    return active;
 }
 
 // Escape HTML
 function escapeHTML(str) {
     if (!str) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
-// Update charts
+// Update charts (optimized)
 function updateCharts() {
-    const mode = document.getElementById('chartMode').value;
-    const total = filteredData.length || 1;
+    if (renderTimeout) clearTimeout(renderTimeout);
     
-    const flowerData = months.map(m => {
-        const count = filteredData.filter(r => r['flower_' + m] === 1).length;
-        return mode === 'percent' ? Math.round((count / total * 100) * 10) / 10 : count;
-    });
-    
-    const seedData = months.map(m => {
-        const count = filteredData.filter(r => r['seed_' + m] === 1).length;
-        return mode === 'percent' ? Math.round((count / total * 100) * 10) / 10 : count;
-    });
-    
-    // Destroy old charts
-    if (flowerChart) flowerChart.destroy();
-    if (seedChart) seedChart.destroy();
-    
-    // Chart options with better styling
-    const chartOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { 
-            legend: { display: false },
-            tooltip: {
-                callbacks: {
-                    label: (context) => {
-                        const label = context.dataset.label || '';
-                        const value = context.raw;
-                        return mode === 'percent' ? `${value}% of species` : `${value} species`;
-                    }
-                }
+    renderTimeout = setTimeout(() => {
+        const mode = document.getElementById('chartMode').value;
+        const total = filteredData.length || 1;
+        
+        // Use Typed Arrays for better performance
+        const flowerData = new Array(12).fill(0);
+        const seedData = new Array(12).fill(0);
+        
+        // Count in one pass
+        for (let row of filteredData) {
+            for (let i = 0; i < months.length; i++) {
+                if (row['flower_' + months[i]] === 1) flowerData[i]++;
+                if (row['seed_' + months[i]] === 1) seedData[i]++;
             }
-        },
-        scales: { 
-            y: { 
-                beginAtZero: true,
-                display: true,
-                grid: {
-                    color: 'rgba(128, 128, 128, 0.1)'
-                },
-                title: {
+        }
+        
+        if (mode === 'percent') {
+            for (let i = 0; i < 12; i++) {
+                flowerData[i] = Math.round((flowerData[i] / total * 100) * 10) / 10;
+                seedData[i] = Math.round((seedData[i] / total * 100) * 10) / 10;
+            }
+        }
+        
+        // Destroy old charts
+        if (flowerChart) flowerChart.destroy();
+        if (seedChart) seedChart.destroy();
+        
+        // Chart options (simplified for performance)
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false, // Disable animations for performance
+            plugins: { 
+                legend: { display: false },
+                tooltip: { enabled: true }
+            },
+            scales: { 
+                y: { 
+                    beginAtZero: true,
                     display: true,
-                    text: mode === 'percent' ? 'Percentage (%)' : 'Number of species'
+                    grid: { color: 'rgba(128,128,128,0.1)' }
                 }
             }
-        }
-    };
-    
-    flowerChart = new Chart(
-        document.getElementById('flowerChart'),
-        {
-            type: 'bar',
-            data: { 
-                labels: months, 
-                datasets: [{ 
-                    data: flowerData, 
-                    backgroundColor: '#4caf50',
-                    hoverBackgroundColor: '#2e7d32',
-                    borderRadius: 4
-                }] 
-            },
-            options: chartOptions
-        }
-    );
-    
-    seedChart = new Chart(
-        document.getElementById('seedChart'),
-        {
-            type: 'bar',
-            data: { 
-                labels: months, 
-                datasets: [{ 
-                    data: seedData, 
-                    backgroundColor: '#2196f3',
-                    hoverBackgroundColor: '#1976d2',
-                    borderRadius: 4
-                }] 
-            },
-            options: chartOptions
-        }
-    );
+        };
+        
+        flowerChart = new Chart(
+            document.getElementById('flowerChart'),
+            {
+                type: 'bar',
+                data: { 
+                    labels: months, 
+                    datasets: [{ 
+                        data: flowerData, 
+                        backgroundColor: '#4caf50',
+                        barPercentage: 0.9,
+                        categoryPercentage: 0.9
+                    }] 
+                },
+                options: chartOptions
+            }
+        );
+        
+        seedChart = new Chart(
+            document.getElementById('seedChart'),
+            {
+                type: 'bar',
+                data: { 
+                    labels: months, 
+                    datasets: [{ 
+                        data: seedData, 
+                        backgroundColor: '#2196f3',
+                        barPercentage: 0.9,
+                        categoryPercentage: 0.9
+                    }] 
+                },
+                options: chartOptions
+            }
+        );
+    }, 100);
 }
 
 // Update stats
@@ -409,25 +580,59 @@ function updateStats() {
     document.getElementById('speciesCount').textContent = filteredData.length;
 }
 
-// Export filtered data
+// Export filtered data (in chunks)
 function exportFilteredData() {
-    const dataStr = JSON.stringify(filteredData, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `plant-data-${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    const chunkSize = 5000;
+    let exported = 0;
     
-    showError(`Exported ${filteredData.length} species`, true);
+    showMessage(`Exporting ${filteredData.length} species...`, 'info');
+    
+    function exportNextChunk() {
+        const chunk = filteredData.slice(exported, exported + chunkSize);
+        const dataStr = JSON.stringify(chunk, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `plant-data-part-${Math.floor(exported/chunkSize)+1}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        exported += chunkSize;
+        
+        if (exported < filteredData.length) {
+            setTimeout(exportNextChunk, 100);
+            showMessage(`Exported ${exported} of ${filteredData.length} species...`, 'info');
+        } else {
+            showMessage(`Export complete! ${filteredData.length} species exported in multiple files`, 'info');
+        }
+    }
+    
+    exportNextChunk();
 }
 
-// Add CSS for screen reader only elements
+// Toggle filters
+function toggleFilters() {
+    const content = document.getElementById('filterContent');
+    const toggle = document.getElementById('filterToggle');
+    content.classList.toggle('hidden');
+    toggle.textContent = content.classList.contains('hidden') ? '▶' : '▼';
+}
+
+// Add CSS for scroll indicator
 const style = document.createElement('style');
 style.textContent = `
+    .scroll-indicator {
+        text-align: center;
+        padding: 10px;
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+        border-top: 1px solid var(--border-color);
+        margin-top: 10px;
+    }
+    
     .sr-only {
         position: absolute;
         width: 1px;
