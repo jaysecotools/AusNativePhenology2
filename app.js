@@ -21,115 +21,14 @@ const familyCache = new Map();
 // Virtual scroll variables
 let visibleSpecies = [];
 let currentPage = 0;
-const PAGE_SIZE = 50; // Show 50 species at a time
+const PAGE_SIZE = 50;
 let totalPages = 0;
 
-// Simple DOM ready
+// Single DOMContentLoaded event
 document.addEventListener('DOMContentLoaded', () => {
     // Show theme controls immediately
     document.querySelector('.theme-controls').style.display = 'flex';
-    setupKeyboardShortcuts();
-    checkSystemTheme();
-    loadData();
-});
-
-// Check system theme preference
-function checkSystemTheme() {
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Don't override if user has manually set a theme
-    if (!localStorage.getItem('theme-preference')) {
-        if (prefersDark) {
-            document.documentElement.classList.remove('light-theme');
-            document.documentElement.classList.remove('dark-theme');
-            // Let the CSS media query handle it
-        } else {
-            document.documentElement.classList.add('light-theme');
-            document.documentElement.classList.remove('dark-theme');
-        }
-    }
-    
-    // Listen for system theme changes
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        // Only auto-switch if user hasn't set a manual preference
-        if (!localStorage.getItem('theme-preference')) {
-            if (e.matches) {
-                document.documentElement.classList.remove('light-theme');
-                document.documentElement.classList.remove('dark-theme');
-            } else {
-                document.documentElement.classList.add('light-theme');
-                document.documentElement.classList.remove('dark-theme');
-            }
-        }
-    });
-}
-
-// Toggle theme manually
-function toggleTheme() {
-    // Remove high contrast if active
-    if (document.documentElement.classList.contains('high-contrast')) {
-        document.documentElement.classList.remove('high-contrast');
-    }
-    
-    // Toggle between light, dark, and system default
-    const currentTheme = localStorage.getItem('theme-preference');
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    if (!currentTheme || currentTheme === 'system') {
-        // First click: force light theme
-        document.documentElement.classList.add('light-theme');
-        document.documentElement.classList.remove('dark-theme');
-        localStorage.setItem('theme-preference', 'light');
-    } else if (currentTheme === 'light') {
-        // Second click: force dark theme
-        document.documentElement.classList.remove('light-theme');
-        document.documentElement.classList.add('dark-theme');
-        localStorage.setItem('theme-preference', 'dark');
-    } else if (currentTheme === 'dark') {
-        // Third click: back to system preference
-        document.documentElement.classList.remove('light-theme');
-        document.documentElement.classList.remove('dark-theme');
-        localStorage.setItem('theme-preference', 'system');
-    }
-    
-    // Update button text to show current mode
-    updateThemeButtonText();
-}
-
-// Update theme button text
-function updateThemeButtonText() {
-    const themeButton = document.querySelector('.theme-toggle');
-    if (!themeButton) return;
-    
-    const preference = localStorage.getItem('theme-preference') || 'system';
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    let modeText = '';
-    if (preference === 'light') {
-        modeText = '☀️ Light';
-    } else if (preference === 'dark') {
-        modeText = '🌑 Dark';
-    } else {
-        modeText = prefersDark ? '🌑 Dark (auto)' : '☀️ Light (auto)';
-    }
-    
-    themeButton.innerHTML = `🌓 ${modeText}`;
-}
-
-// Toggle high contrast
-function toggleContrast() {
-    document.documentElement.classList.toggle('high-contrast');
-    
-    // Update contrast button text
-    const contrastButton = document.querySelector('.contrast-toggle');
-    if (contrastButton) {
-        const isHighContrast = document.documentElement.classList.contains('high-contrast');
-        contrastButton.innerHTML = isHighContrast ? '👁️ High Contrast On' : '👁️ High Contrast Off';
-    }
-}
-
-// Initialize theme on load
-document.addEventListener('DOMContentLoaded', () => {
     // Load saved theme preference
     const savedTheme = localStorage.getItem('theme-preference');
     if (savedTheme === 'light') {
@@ -157,6 +56,86 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData();
 });
 
+// Check system theme preference
+function checkSystemTheme() {
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (!localStorage.getItem('theme-preference')) {
+        if (prefersDark) {
+            document.documentElement.classList.remove('light-theme');
+            document.documentElement.classList.remove('dark-theme');
+        } else {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.classList.remove('dark-theme');
+        }
+    }
+    
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem('theme-preference')) {
+            if (e.matches) {
+                document.documentElement.classList.remove('light-theme');
+                document.documentElement.classList.remove('dark-theme');
+            } else {
+                document.documentElement.classList.add('light-theme');
+                document.documentElement.classList.remove('dark-theme');
+            }
+        }
+    });
+}
+
+// Toggle theme manually
+function toggleTheme() {
+    if (document.documentElement.classList.contains('high-contrast')) {
+        document.documentElement.classList.remove('high-contrast');
+    }
+    
+    const currentTheme = localStorage.getItem('theme-preference');
+    
+    if (!currentTheme || currentTheme === 'system') {
+        document.documentElement.classList.add('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+        localStorage.setItem('theme-preference', 'light');
+    } else if (currentTheme === 'light') {
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.add('dark-theme');
+        localStorage.setItem('theme-preference', 'dark');
+    } else if (currentTheme === 'dark') {
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+        localStorage.setItem('theme-preference', 'system');
+    }
+    
+    updateThemeButtonText();
+}
+
+// Update theme button text
+function updateThemeButtonText() {
+    const themeButton = document.querySelector('.theme-toggle');
+    if (!themeButton) return;
+    
+    const preference = localStorage.getItem('theme-preference') || 'system';
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    let modeText = '';
+    if (preference === 'light') {
+        modeText = '☀️ Light';
+    } else if (preference === 'dark') {
+        modeText = '🌑 Dark';
+    } else {
+        modeText = prefersDark ? '🌑 Dark (auto)' : '☀️ Light (auto)';
+    }
+    
+    themeButton.innerHTML = `🌓 ${modeText}`;
+}
+
+// Toggle high contrast
+function toggleContrast() {
+    document.documentElement.classList.toggle('high-contrast');
+    const isHighContrast = document.documentElement.classList.contains('high-contrast');
+    localStorage.setItem('high-contrast', isHighContrast);
+    updateContrastButtonText();
+}
+
 // Update contrast button text
 function updateContrastButtonText() {
     const contrastButton = document.querySelector('.contrast-toggle');
@@ -164,14 +143,6 @@ function updateContrastButtonText() {
         const isHighContrast = document.documentElement.classList.contains('high-contrast');
         contrastButton.innerHTML = isHighContrast ? '👁️ High Contrast On' : '👁️ High Contrast Off';
     }
-}
-
-// Save high contrast preference when toggled
-function toggleContrast() {
-    document.documentElement.classList.toggle('high-contrast');
-    const isHighContrast = document.documentElement.classList.contains('high-contrast');
-    localStorage.setItem('high-contrast', isHighContrast);
-    updateContrastButtonText();
 }
 
 // Setup keyboard shortcuts
@@ -198,7 +169,6 @@ function showLoading(msg = 'Loading...') {
     const loadingText = document.getElementById('loadingText');
     loadingText.textContent = msg;
     loadingEl.style.display = 'flex';
-    // Don't add loading class to body - keep UI interactive
 }
 
 function hideLoading() {
@@ -228,7 +198,6 @@ function showMessage(msg, type = 'info') {
 
 // Load data with streaming parser
 function loadData() {
-    // Check cache first
     if (dataCache.has(currentDataset)) {
         const cached = dataCache.get(currentDataset);
         speciesData = cached.data;
@@ -241,12 +210,10 @@ function loadData() {
     }
     
     showLoading(`Loading ${currentDataset}...`);
-    
-    // Use streaming parser for large files
     loadWithStreamingParser();
 }
 
-// Load with streaming parser (handles 25k+ records efficiently)
+// Load with streaming parser
 function loadWithStreamingParser() {
     const parsedData = [];
     const families = new Set();
@@ -258,8 +225,7 @@ function loadWithStreamingParser() {
         download: true,
         dynamicTyping: true,
         skipEmptyLines: true,
-        step: (results, parser) => {
-            // Process each row as it comes in
+        step: (results) => {
             const row = results.data;
             if (row.scientific_name) {
                 parsedData.push(row);
@@ -267,7 +233,6 @@ function loadWithStreamingParser() {
                 rowCount++;
             }
             
-            // Update progress every 500ms or every 1000 rows
             const now = Date.now();
             if (now - lastUpdate > 500 || rowCount % 1000 === 0) {
                 document.getElementById('loadingText').textContent = 
@@ -275,23 +240,19 @@ function loadWithStreamingParser() {
                 lastUpdate = now;
             }
             
-            // Yield to UI every 100 rows
             if (rowCount % 100 === 0) {
                 setTimeout(() => {}, 0);
             }
         },
         complete: () => {
-            // Process complete dataset
             speciesData = parsedData;
             filteredData = [...speciesData];
             
-            // Cache the data
             dataCache.set(currentDataset, {
                 data: speciesData,
                 families: Array.from(families).sort()
             });
             
-            // Update UI
             updateFamilyFilter(Array.from(families).sort());
             updateUI();
             hideLoading();
@@ -300,10 +261,6 @@ function loadWithStreamingParser() {
         error: (error) => {
             console.error('Parse error:', error);
             loadSampleData();
-        },
-        chunk: (results, parser) => {
-            // Process chunks without blocking
-            setTimeout(() => {}, 0);
         }
     });
 }
@@ -326,12 +283,15 @@ function loadSampleData() {
     showMessage('Using sample data', 'warning');
 }
 
-// Update family filter (optimized)
+// Update family filter
 function updateFamilyFilter(families) {
+    if (!families) {
+        families = [...new Set(speciesData.map(r => r.family).filter(Boolean))].sort();
+    }
+    
     const select = document.getElementById('familyFilter');
     const currentVal = select.value;
     
-    // Use DocumentFragment for faster DOM updates
     const fragment = document.createDocumentFragment();
     const optionAll = document.createElement('option');
     optionAll.value = '';
@@ -345,7 +305,6 @@ function updateFamilyFilter(families) {
         fragment.appendChild(option);
     });
     
-    // Clear and append in one operation
     select.innerHTML = '';
     select.appendChild(fragment);
     
@@ -359,13 +318,12 @@ function changeDataset() {
     const newDataset = document.getElementById('datasetSelect').value;
     if (newDataset !== currentDataset) {
         currentDataset = newDataset;
-        // Reset pagination
         currentPage = 0;
         loadData();
     }
 }
 
-// Apply filters (optimized for large datasets)
+// Apply filters
 function applyFilters() {
     if (isProcessing) return;
     
@@ -381,9 +339,7 @@ function applyFilters() {
         const both = document.getElementById('bothDataFilter').checked;
         const search = document.getElementById('searchInput').value.toLowerCase();
         
-        // Use setTimeout to not block UI
         setTimeout(() => {
-            // For large datasets, use indexed filtering
             if (speciesData.length > 10000) {
                 filterLargeDataset(state, flowerMonth, seedMonth, family, both, search);
             } else {
@@ -391,7 +347,7 @@ function applyFilters() {
             }
         }, 10);
         
-    }, 400); // Longer debounce for large datasets
+    }, 400);
 }
 
 // Filter small datasets
@@ -421,7 +377,6 @@ function filterSmallDataset(state, flowerMonth, seedMonth, family, both, search)
         return true;
     });
     
-    // Reset pagination
     currentPage = 0;
     isProcessing = false;
     updateUI();
@@ -447,7 +402,6 @@ function filterLargeDataset(state, flowerMonth, seedMonth, family, both, search)
     worker.onmessage = (e) => {
         if (e.data.error) {
             console.error('Worker error:', e.data.error);
-            // Fallback to normal filtering
             filterSmallDataset(state, flowerMonth, seedMonth, family, both, search);
         } else {
             filteredData = e.data;
@@ -460,7 +414,6 @@ function filterLargeDataset(state, flowerMonth, seedMonth, family, both, search)
         worker.terminate();
     };
     
-    // Timeout fallback
     setTimeout(() => {
         if (isProcessing) {
             worker.terminate();
@@ -485,14 +438,10 @@ function updateUI() {
     updateStats();
     updateCharts();
     
-    // Reset pagination for new data
     totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
     currentPage = 0;
     
-    // Render first page
     renderSpeciesPage();
-    
-    // Setup scroll listener for virtual scrolling
     setupVirtualScrolling();
 }
 
@@ -555,7 +504,6 @@ function setupVirtualScrolling() {
         scrollTimeout = setTimeout(() => {
             const { scrollTop, scrollHeight, clientHeight } = container;
             
-            // Load next page when near bottom
             if (scrollTop + clientHeight >= scrollHeight - 200) {
                 if (currentPage < totalPages - 1) {
                     currentPage++;
@@ -563,11 +511,9 @@ function setupVirtualScrolling() {
                 }
             }
             
-            // Load previous page when near top
             if (scrollTop < 200 && currentPage > 0) {
                 currentPage--;
                 renderSpeciesPage();
-                // Maintain scroll position
                 container.scrollTop = 200;
             }
         }, 100);
@@ -576,21 +522,20 @@ function setupVirtualScrolling() {
 
 // Update scroll indicator
 function updateScrollIndicator() {
-    const indicator = document.getElementById('scrollIndicator');
+    let indicator = document.getElementById('scrollIndicator');
     if (!indicator) {
-        const div = document.createElement('div');
-        div.id = 'scrollIndicator';
-        div.className = 'scroll-indicator';
-        document.querySelector('.card:last-child').appendChild(div);
+        indicator = document.createElement('div');
+        indicator.id = 'scrollIndicator';
+        indicator.className = 'scroll-indicator';
+        document.querySelector('.card:last-child').appendChild(indicator);
     }
     
     const start = currentPage * PAGE_SIZE + 1;
     const end = Math.min((currentPage + 1) * PAGE_SIZE, filteredData.length);
-    document.getElementById('scrollIndicator').textContent = 
-        `Showing ${start}-${end} of ${filteredData.length} species`;
+    indicator.textContent = `Showing ${start}-${end} of ${filteredData.length} species`;
 }
 
-// Helper: get active months (optimized)
+// Helper: get active months
 function getActiveMonths(row, prefix) {
     const active = [];
     for (let m of months) {
@@ -609,7 +554,7 @@ function escapeHTML(str) {
     return div.innerHTML;
 }
 
-// Update charts (optimized)
+// Update charts
 function updateCharts() {
     if (renderTimeout) clearTimeout(renderTimeout);
     
@@ -617,11 +562,9 @@ function updateCharts() {
         const mode = document.getElementById('chartMode').value;
         const total = filteredData.length || 1;
         
-        // Use Typed Arrays for better performance
         const flowerData = new Array(12).fill(0);
         const seedData = new Array(12).fill(0);
         
-        // Count in one pass
         for (let row of filteredData) {
             for (let i = 0; i < months.length; i++) {
                 if (row['flower_' + months[i]] === 1) flowerData[i]++;
@@ -636,15 +579,13 @@ function updateCharts() {
             }
         }
         
-        // Destroy old charts
         if (flowerChart) flowerChart.destroy();
         if (seedChart) seedChart.destroy();
         
-        // Chart options (simplified for performance)
         const chartOptions = {
             responsive: true,
             maintainAspectRatio: false,
-            animation: false, // Disable animations for performance
+            animation: false,
             plugins: { 
                 legend: { display: false },
                 tooltip: { enabled: true }
@@ -699,7 +640,7 @@ function updateStats() {
     document.getElementById('speciesCount').textContent = filteredData.length;
 }
 
-// Export filtered data (in chunks)
+// Export filtered data
 function exportFilteredData() {
     const chunkSize = 5000;
     let exported = 0;
@@ -739,28 +680,3 @@ function toggleFilters() {
     content.classList.toggle('hidden');
     toggle.textContent = content.classList.contains('hidden') ? '▶' : '▼';
 }
-
-// Add CSS for scroll indicator
-const style = document.createElement('style');
-style.textContent = `
-    .scroll-indicator {
-        text-align: center;
-        padding: 10px;
-        font-size: 0.9rem;
-        color: var(--text-secondary);
-        border-top: 1px solid var(--border-color);
-        margin-top: 10px;
-    }
-    
-    .sr-only {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        padding: 0;
-        margin: -1px;
-        overflow: hidden;
-        clip: rect(0,0,0,0);
-        border: 0;
-    }
-`;
-document.head.appendChild(style);
