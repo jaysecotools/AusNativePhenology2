@@ -35,24 +35,143 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Check system theme preference
 function checkSystemTheme() {
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        document.documentElement.classList.remove('light-theme');
-    } else {
-        document.documentElement.classList.add('light-theme');
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Don't override if user has manually set a theme
+    if (!localStorage.getItem('theme-preference')) {
+        if (prefersDark) {
+            document.documentElement.classList.remove('light-theme');
+            document.documentElement.classList.remove('dark-theme');
+            // Let the CSS media query handle it
+        } else {
+            document.documentElement.classList.add('light-theme');
+            document.documentElement.classList.remove('dark-theme');
+        }
     }
+    
+    // Listen for system theme changes
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        // Only auto-switch if user hasn't set a manual preference
+        if (!localStorage.getItem('theme-preference')) {
+            if (e.matches) {
+                document.documentElement.classList.remove('light-theme');
+                document.documentElement.classList.remove('dark-theme');
+            } else {
+                document.documentElement.classList.add('light-theme');
+                document.documentElement.classList.remove('dark-theme');
+            }
+        }
+    });
 }
 
 // Toggle theme manually
 function toggleTheme() {
+    // Remove high contrast if active
     if (document.documentElement.classList.contains('high-contrast')) {
         document.documentElement.classList.remove('high-contrast');
     }
-    document.documentElement.classList.toggle('light-theme');
+    
+    // Toggle between light, dark, and system default
+    const currentTheme = localStorage.getItem('theme-preference');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (!currentTheme || currentTheme === 'system') {
+        // First click: force light theme
+        document.documentElement.classList.add('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+        localStorage.setItem('theme-preference', 'light');
+    } else if (currentTheme === 'light') {
+        // Second click: force dark theme
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.add('dark-theme');
+        localStorage.setItem('theme-preference', 'dark');
+    } else if (currentTheme === 'dark') {
+        // Third click: back to system preference
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+        localStorage.setItem('theme-preference', 'system');
+    }
+    
+    // Update button text to show current mode
+    updateThemeButtonText();
+}
+
+// Update theme button text
+function updateThemeButtonText() {
+    const themeButton = document.querySelector('.theme-toggle');
+    if (!themeButton) return;
+    
+    const preference = localStorage.getItem('theme-preference') || 'system';
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    let modeText = '';
+    if (preference === 'light') {
+        modeText = '☀️ Light';
+    } else if (preference === 'dark') {
+        modeText = '🌑 Dark';
+    } else {
+        modeText = prefersDark ? '🌑 Dark (auto)' : '☀️ Light (auto)';
+    }
+    
+    themeButton.innerHTML = `🌓 ${modeText}`;
 }
 
 // Toggle high contrast
 function toggleContrast() {
     document.documentElement.classList.toggle('high-contrast');
+    
+    // Update contrast button text
+    const contrastButton = document.querySelector('.contrast-toggle');
+    if (contrastButton) {
+        const isHighContrast = document.documentElement.classList.contains('high-contrast');
+        contrastButton.innerHTML = isHighContrast ? '👁️ High Contrast On' : '👁️ High Contrast Off';
+    }
+}
+
+// Initialize theme on load
+document.addEventListener('DOMContentLoaded', () => {
+    // Load saved theme preference
+    const savedTheme = localStorage.getItem('theme-preference');
+    if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+    } else if (savedTheme === 'dark') {
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.add('dark-theme');
+    } else {
+        // System default
+        document.documentElement.classList.remove('light-theme');
+        document.documentElement.classList.remove('dark-theme');
+    }
+    
+    // Load high contrast preference
+    const savedContrast = localStorage.getItem('high-contrast');
+    if (savedContrast === 'true') {
+        document.documentElement.classList.add('high-contrast');
+    }
+    
+    updateThemeButtonText();
+    updateContrastButtonText();
+    setupKeyboardShortcuts();
+    checkSystemTheme();
+    loadData();
+});
+
+// Update contrast button text
+function updateContrastButtonText() {
+    const contrastButton = document.querySelector('.contrast-toggle');
+    if (contrastButton) {
+        const isHighContrast = document.documentElement.classList.contains('high-contrast');
+        contrastButton.innerHTML = isHighContrast ? '👁️ High Contrast On' : '👁️ High Contrast Off';
+    }
+}
+
+// Save high contrast preference when toggled
+function toggleContrast() {
+    document.documentElement.classList.toggle('high-contrast');
+    const isHighContrast = document.documentElement.classList.contains('high-contrast');
+    localStorage.setItem('high-contrast', isHighContrast);
+    updateContrastButtonText();
 }
 
 // Setup keyboard shortcuts
