@@ -25,7 +25,7 @@
     --chart-seed: #2196f3;
 }
 
-/* Dark theme variables - add this after your light theme variables */
+/* Dark theme variables */
 .dark-theme {
     --bg-primary: #1a2a1a;
     --bg-card: #2a3a2a;
@@ -45,9 +45,9 @@
     --chart-seed: #42a5f5;
 }
 
-/* Dark theme variables */
+/* System dark theme preference */
 @media (prefers-color-scheme: dark) {
-    :root:not(.light-theme) {
+    :root:not(.light-theme):not(.dark-theme) {
         --bg-primary: #1a2a1a;
         --bg-card: #2a3a2a;
         --text-primary: #e0e0e0;
@@ -94,6 +94,7 @@ body {
     color: var(--text-primary);
     line-height: 1.4;
     transition: background-color 0.3s ease, color 0.3s ease;
+    min-height: 100vh;
 }
 
 /* Make sure cards and other elements update */
@@ -134,15 +135,6 @@ body {
     border: 2px solid var(--border-color);
     background: var(--bg-card);
     color: var(--text-primary);
-}
-
-body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    line-height: 1.4;
-    transition: background-color 0.3s ease, color 0.3s ease;
-    min-height: 100vh;
 }
 
 .container {
@@ -194,12 +186,12 @@ h1 {
     padding: 10px 16px;
     border-radius: 30px;
     font-size: 0.95rem;
-    z-index: 10001; /* Higher than theme controls */
+    z-index: 10001;
     display: flex;
     align-items: center;
     gap: 10px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-    pointer-events: none; /* Don't block clicks */
+    pointer-events: none;
 }
 
 .spinner {
@@ -784,6 +776,45 @@ h1 {
     border: 2px dashed var(--border-color);
 }
 
+/* Footer */
+.footer-simple {
+    margin-top: 40px;
+    margin-bottom: 100px;
+    padding: 20px 0;
+    border-top: 2px solid var(--accent-light);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    text-align: center;
+    clear: both;
+}
+
+.footer-simple p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.footer-simple strong {
+    color: var(--accent-primary);
+}
+
+.footer-simple .copyright {
+    color: var(--accent-primary);
+    font-size: 0.85rem;
+    margin-left: 8px;
+}
+
+.dark-theme .footer-simple,
+@media (prefers-color-scheme: dark) {
+    .footer-simple {
+        border-top-color: var(--accent-dark);
+    }
+}
+
+.high-contrast .footer-simple {
+    border-top: 2px solid var(--border-color);
+    color: var(--text-primary);
+}
+
 /* Touch-friendly */
 select, button, input {
     touch-action: manipulation;
@@ -861,6 +892,12 @@ body.loading .contrast-toggle {
     .export-btn {
         margin-left: 0;
         width: 100%;
+    }
+    
+    .footer-simple {
+        margin-bottom: 80px;
+        font-size: 0.85rem;
+        padding: 15px;
     }
 }
 
