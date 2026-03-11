@@ -13,7 +13,7 @@ body {
 }
 
 .container {
-    width: 80%;          /* Use percentage for smaller screens */
+    width: 95%;          /* Use percentage for smaller screens */
     max-width: 1400px;   /* But cap it at 1400px on very large screens */
     margin: 0 auto;
     padding: 20px;
