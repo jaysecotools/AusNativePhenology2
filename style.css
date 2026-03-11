@@ -25,6 +25,26 @@
     --chart-seed: #2196f3;
 }
 
+/* Dark theme variables - add this after your light theme variables */
+.dark-theme {
+    --bg-primary: #1a2a1a;
+    --bg-card: #2a3a2a;
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --accent-primary: #4caf50;
+    --accent-light: #2a3a2a;
+    --accent-dark: #81c784;
+    --border-color: #4a5a4a;
+    --error-bg: #4a2a2a;
+    --error-text: #ff8a80;
+    --warning-bg: #4a3a2a;
+    --warning-text: #ffb74d;
+    --shadow-color: rgba(0,0,0,0.3);
+    --hover-bg: #3a4a3a;
+    --chart-flower: #66bb6a;
+    --chart-seed: #42a5f5;
+}
+
 /* Dark theme variables */
 @media (prefers-color-scheme: dark) {
     :root:not(.light-theme) {
@@ -65,6 +85,31 @@
     --hover-bg: #333333;
     --chart-flower: #ffff00;
     --chart-seed: #00ffff;
+}
+
+/* Ensure all components use CSS variables */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.4;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Make sure cards and other elements update */
+.card {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+/* Add smooth transitions for theme changes */
+* {
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* But disable transitions for elements that shouldn't animate */
+.no-transition {
+    transition: none !important;
 }
 
 .high-contrast .card {
