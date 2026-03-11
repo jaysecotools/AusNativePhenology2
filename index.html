@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>Aus Plant Phenology</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Aus Plant Phenology - Conservation Tool</title>
+    <meta name="description" content="Australian native plant phenology database for conservation and research">
+    <meta name="theme-color" content="#2e7d32">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
@@ -14,132 +16,167 @@
     
     <header>
         <h1>🌿 Aus Plant Phenology</h1>
-        <p class="subtitle">Conservation tool</p>
+        <p class="subtitle">Australian Native Plants Conservation Tool</p>
     </header>
     
     <!-- Simple loading indicator -->
-    <div id="loading" class="loading" style="display: none;">
-        <div class="spinner"></div>
+    <div id="loading" class="loading" style="display: none;" role="status" aria-live="polite">
+        <div class="spinner" aria-hidden="true"></div>
         <span id="loadingText">Loading...</span>
     </div>
     
     <!-- Simple error message -->
-    <div id="errorMsg" class="error-box" style="display: none;"></div>
+    <div id="errorMsg" class="error-box" style="display: none;" role="alert" aria-live="assertive"></div>
     
-    <!-- Filters - Collapsible on mobile -->
-    <div class="card">
-        <div class="filter-header" onclick="toggleFilters()">
-            <h3>🔍 Filters</h3>
-            <span id="filterToggle">▼</span>
+    <!-- Dashboard Grid -->
+    <div class="dashboard-grid">
+        <!-- Filters Sidebar -->
+        <div class="filters-sidebar">
+            <div class="card">
+                <div class="filter-header" 
+                     onclick="toggleFilters()"
+                     onkeydown="if(event.key==='Enter'||event.key===' ') { event.preventDefault(); toggleFilters(); }"
+                     role="button"
+                     tabindex="0"
+                     aria-expanded="true"
+                     aria-controls="filterContent"
+                     aria-label="Toggle filters panel">
+                    <h3 id="filter-heading">🔍 Filters</h3>
+                    <span id="filterToggle" aria-hidden="true">▼</span>
+                </div>
+                
+                <div id="filterContent" class="filter-content" aria-labelledby="filter-heading">
+                    <div class="filter-group">
+                        <label for="stateFilter">State / Territory</label>
+                        <select id="stateFilter" onchange="applyFilters()" aria-label="Filter by state">
+                            <option value="">All states</option>
+                            <option value="NSW">New South Wales</option>
+                            <option value="VIC">Victoria</option>
+                            <option value="QLD">Queensland</option>
+                            <option value="SA">South Australia</option>
+                            <option value="WA">Western Australia</option>
+                            <option value="TAS">Tasmania</option>
+                            <option value="NT">Northern Territory</option>
+                            <option value="ACT">Australian Capital Territory</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="flowerMonth">Flowering month</label>
+                        <select id="flowerMonth" onchange="applyFilters()" aria-label="Filter by flowering month">
+                            <option value="">Any month</option>
+                            <option value="Jan">January</option><option value="Feb">February</option>
+                            <option value="Mar">March</option><option value="Apr">April</option>
+                            <option value="May">May</option><option value="Jun">June</option>
+                            <option value="Jul">July</option><option value="Aug">August</option>
+                            <option value="Sep">September</option><option value="Oct">October</option>
+                            <option value="Nov">November</option><option value="Dec">December</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="seedMonth">Seeding month</label>
+                        <select id="seedMonth" onchange="applyFilters()" aria-label="Filter by seeding month">
+                            <option value="">Any month</option>
+                            <option value="Jan">January</option><option value="Feb">February</option>
+                            <option value="Mar">March</option><option value="Apr">April</option>
+                            <option value="May">May</option><option value="Jun">June</option>
+                            <option value="Jul">July</option><option value="Aug">August</option>
+                            <option value="Sep">September</option><option value="Oct">October</option>
+                            <option value="Nov">November</option><option value="Dec">December</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label for="familyFilter">Plant family</label>
+                        <select id="familyFilter" onchange="applyFilters()" aria-label="Filter by plant family">
+                            <option value="">All families</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-checkbox">
+                        <label>
+                            <input type="checkbox" id="bothDataFilter" onchange="applyFilters()" aria-label="Show only species with both flowering and seeding data">
+                            Both flowering & seeding data
+                        </label>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <input type="text" id="searchInput" placeholder="🔍 Search species or common name..." onkeyup="applyFilters()" aria-label="Search species">
+                        <button onclick="clearFilters()" class="btn-small" aria-label="Clear all filters">Clear</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dataset selector -->
+            <div class="card dataset-card">
+                <label for="datasetSelect" class="sr-only">Select dataset</label>
+                <select id="datasetSelect" class="dataset-select" aria-label="Choose dataset">
+                    <option value="aus_native_phenology_complete.csv">Complete Database</option>
+                    <option value="sample_phenology_data.csv">Sample Data</option>
+                    <option value="my_compiled_database.csv">Compiled Database</option>
+                    <option value="aus_native_phenology_complete_with_common_names.csv">Complete with Common Names</option>
+                    <option value="TAS_Natives.csv">Tasmanian Natives</option>
+                </select>
+                <button onclick="changeDataset()" class="btn-small" aria-label="Load selected dataset">Load</button>
+            </div>
         </div>
         
-        <div id="filterContent" class="filter-content">
-            <div class="filter-group">
-                <label>State</label>
-                <select id="stateFilter" onchange="applyFilters()">
-                    <option value="">All</option>
-                    <option value="NSW">NSW</option>
-                    <option value="VIC">VIC</option>
-                    <option value="QLD">QLD</option>
-                    <option value="SA">SA</option>
-                    <option value="WA">WA</option>
-                    <option value="TAS">TAS</option>
-                    <option value="NT">NT</option>
-                    <option value="ACT">ACT</option>
-                </select>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Stats bar -->
+            <div class="stats-bar" role="status" aria-live="polite">
+                <span>Species: <strong id="speciesCount">0</strong></span>
+                <span>
+                    <label for="chartMode" class="sr-only">Chart display mode</label>
+                    <select id="chartMode" onchange="updateCharts()" class="chart-mode-select" aria-label="Chart display mode">
+                        <option value="total">Count</option>
+                        <option value="percent">Percentage</option>
+                    </select>
+                </span>
             </div>
             
-            <div class="filter-group">
-                <label>Flowering</label>
-                <select id="flowerMonth" onchange="applyFilters()">
-                    <option value="">Any</option>
-                    <option value="Jan">Jan</option><option value="Feb">Feb</option>
-                    <option value="Mar">Mar</option><option value="Apr">Apr</option>
-                    <option value="May">May</option><option value="Jun">Jun</option>
-                    <option value="Jul">Jul</option><option value="Aug">Aug</option>
-                    <option value="Sep">Sep</option><option value="Oct">Oct</option>
-                    <option value="Nov">Nov</option><option value="Dec">Dec</option>
-                </select>
+            <!-- Charts -->
+            <div class="charts-row">
+                <div class="chart-mini">
+                    <h4>🌸 Flowering</h4>
+                    <canvas id="flowerChart" role="img" aria-label="Bar chart showing flowering months"></canvas>
+                </div>
+                <div class="chart-mini">
+                    <h4>🌱 Seeding</h4>
+                    <canvas id="seedChart" role="img" aria-label="Bar chart showing seeding months"></canvas>
+                </div>
             </div>
             
-            <div class="filter-group">
-                <label>Seed</label>
-                <select id="seedMonth" onchange="applyFilters()">
-                    <option value="">Any</option>
-                    <option value="Jan">Jan</option><option value="Feb">Feb</option>
-                    <option value="Mar">Mar</option><option value="Apr">Apr</option>
-                    <option value="May">May</option><option value="Jun">Jun</option>
-                    <option value="Jul">Jul</option><option value="Aug">Aug</option>
-                    <option value="Sep">Sep</option><option value="Oct">Oct</option>
-                    <option value="Nov">Nov</option><option value="Dec">Dec</option>
-                </select>
-            </div>
-            
-            <div class="filter-group">
-                <label>Family</label>
-                <select id="familyFilter" onchange="applyFilters()">
-                    <option value="">All</option>
-                </select>
-            </div>
-            
-            <div class="filter-checkbox">
-                <label>
-                    <input type="checkbox" id="bothDataFilter" onchange="applyFilters()">
-                    Both flowering & seed
-                </label>
-            </div>
-            
-            <div class="filter-actions">
-                <input type="text" id="searchInput" placeholder="🔍 Search species..." onkeyup="applyFilters()">
-                <button onclick="clearFilters()" class="btn-small">Clear</button>
+            <!-- Species list -->
+            <div class="card">
+                <div class="species-header">
+                    <h3>📋 Species</h3>
+                    <span id="resultCount" class="count-badge" aria-label="Number of species">0</span>
+                    <button onclick="exportFilteredData()" class="export-btn" aria-label="Export filtered data as JSON">📥 Export</button>
+                </div>
+                
+                <div id="speciesList" 
+                     class="species-list" 
+                     aria-live="polite" 
+                     aria-label="Filtered species list"
+                     role="region">
+                    <!-- Will be populated by JavaScript -->
+                </div>
             </div>
         </div>
     </div>
-    
-    <!-- Dataset selector - Simplified -->
-    <div class="card dataset-card">
-        <select id="datasetSelect" class="dataset-select">
-            <option value="aus_native_phenology_complete.csv">Complete</option>
-            <option value="sample_phenology_data.csv">Sample</option>
-            <option value="my_compiled_database.csv">Compiled</option>
-            <option value="aus_native_phenology_complete_with_common_names.csv">Complete with common names</option>
-            <option value="TAS_Natives.csv">TAS Natives</option>
-        </select>
-        <button onclick="changeDataset()" class="btn-small">Load</button>
-    </div>
-    
-    <!-- Stats bar -->
-    <div class="stats-bar">
-        <span>Species: <strong id="speciesCount">0</strong></span>
-        <span>
-            <select id="chartMode" onchange="updateCharts()" class="chart-mode-select">
-                <option value="total">Count</option>
-                <option value="percent">%</option>
-            </select>
-        </span>
-    </div>
-    
-    <!-- Charts - Simplified -->
-    <div class="charts-row">
-        <div class="chart-mini">
-            <h4>🌸 Flowering</h4>
-            <canvas id="flowerChart"></canvas>
-        </div>
-        <div class="chart-mini">
-            <h4>🌱 Seed</h4>
-            <canvas id="seedChart"></canvas>
-        </div>
-    </div>
-    
-    <!-- Species list - Simplified table -->
-    <div class="card">
-        <h3>📋 Species <span id="resultCount" class="count-badge">0</span></h3>
-        
-        <div class="species-list" id="speciesList">
-            <!-- Will be populated by JavaScript -->
-        </div>
-    </div>
-    
+</div>
+
+<!-- Theme Controls -->
+<div class="theme-controls">
+    <button onclick="toggleTheme()" class="theme-toggle" aria-label="Toggle dark/light mode">🌓 Dark/Light</button>
+    <button onclick="toggleContrast()" class="contrast-toggle" aria-label="Toggle high contrast mode">👁️ High Contrast</button>
+</div>
+
+<!-- Keyboard Shortcut Hint -->
+<div class="shortcut-hint" aria-hidden="true">
+    <kbd>Ctrl+F</kbd> Focus search · <kbd>Esc</kbd> Clear filters
 </div>
 
 <script src="app.js"></script>
