@@ -1,4 +1,4 @@
-# Aus Plant Phenology - Conservation Tool
+# 🌿 Aus Plant Phenology - Conservation Tool
 
 A comprehensive web application for exploring and analyzing Australian native plant phenology data, designed for conservation research and environmental management.
 
@@ -71,7 +71,7 @@ aus-plant-phenology/
 
 ## 🚀 Getting Started
 
-Prerequisites
+### Prerequisites
 
 · A modern web browser (Chrome, Firefox, Safari, Edge)
 · Local web server for best performance (optional)
@@ -97,9 +97,9 @@ Prerequisites
 
 ---
 
-### 💡 How to Use
+## 💡 How to Use
 
-Basic Navigation
+### Basic Navigation
 
 1. Filter Data:
    · Expand the filters panel (click "🔍 Filters" header)
@@ -126,9 +126,9 @@ Basic Navigation
 
 ---
 
-### 🔧 Data Format
+## 🔧 Data Format
 
-CSV Requirements
+### CSV Requirements
 
 Your CSV files should follow this format:
 
@@ -137,7 +137,7 @@ Species,Family,State,Flowering,Seeding,CommonName
 "Acacia longifolia","Fabaceae","NSW","Jan-Feb-Mar","Sep-Oct-Nov","Golden Wattle"
 ```
 
-Required Columns
+### Required Columns
 
 Column Description Example
 Species Scientific name "Acacia longifolia"
@@ -149,15 +149,15 @@ CommonName Common name (optional) "Golden Wattle"
 
 ---
 
-📊 Chart Interpretation
+## 📊 Chart Interpretation
 
-Flowering Chart
+### Flowering Chart
 
 · Shows distribution of flowering months across filtered species
 · Each bar represents the number of species flowering in that month
 · Toggle to percentage view for relative comparisons
 
-Seeding Chart
+### Seeding Chart
 
 · Shows distribution of seeding months
 · Similar format to flowering chart
@@ -165,7 +165,7 @@ Seeding Chart
 
 ---
 
-♿ Accessibility Features
+## ♿ Accessibility Features
 
 · Screen Reader Support: Comprehensive ARIA labels and landmarks
 · Keyboard Navigation: All controls accessible via keyboard
@@ -176,14 +176,14 @@ Seeding Chart
 
 ---
 
-🎨 Customization
+## 🎨 Customization
 
-Theme Options
+### Theme Options
 
 · 🌓 Theme Toggle: Switch between light and dark modes
 · 👁️ High Contrast: Enhanced contrast for better readability
 
-CSS Variables
+### CSS Variables
 
 Core theme colors can be customized in style.css:
 
@@ -200,9 +200,9 @@ Core theme colors can be customized in style.css:
 
 ---
 
-🔍 Troubleshooting
+## 🔍 Troubleshooting
 
-Common Issues
+### Common Issues
 
 Issue: Charts don't load
 
@@ -226,7 +226,7 @@ Issue: Data not exporting
 
 ---
 
-📈 Performance Considerations
+##📈 Performance Considerations
 
 · Charts use Chart.js with optimized rendering
 · Lazy loading for datasets
@@ -236,7 +236,7 @@ Issue: Data not exporting
 
 ---
 
-🧪 Testing
+## 🧪 Testing
 
 Manual Testing Checklist
 
@@ -252,7 +252,7 @@ Manual Testing Checklist
 
 ---
 <!--
-🤝 Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch: git checkout -b feature/amazing-feature
@@ -269,13 +269,13 @@ Development Guidelines
 
 ---
 -->
-📝 License
+## 📝 License
 
 This project is © 2026 Jay Rowley. All rights reserved.
 
 ---
 
-🙏 Acknowledgments
+## 🙏 Acknowledgments
 
 · Chart.js for data visualization
 · PapaParse for CSV parsing
@@ -284,7 +284,7 @@ This project is © 2026 Jay Rowley. All rights reserved.
 
 ---
 
-📞 Support
+## 📞 Support
 
 For issues, questions, or contributions, please open an issue on GitHub or contact the developer directly.
 
@@ -292,7 +292,7 @@ Developer: Jay Rowley
 
 ---
 
-🔮 Future Enhancements
+## 🔮 Future Enhancements
 
 · Data Upload: User-defined CSV upload
 · Advanced Analytics: Phenological pattern analysis
