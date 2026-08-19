@@ -1,18 +1,18 @@
-Aus Plant Phenology - Conservation Tool
+# Aus Plant Phenology - Conservation Tool
 
 A comprehensive web application for exploring and analyzing Australian native plant phenology data, designed for conservation research and environmental management.
 
 ---
 
-📋 Overview
+## 📋 Overview
 
 Aus Plant Phenology is an interactive data visualization tool that allows researchers, conservationists, and plant enthusiasts to explore flowering and seeding patterns of Australian native plants. The application provides filtering capabilities, visual charts, and species data management to support conservation planning and ecological research.
 
 ---
 
-✨ Features
+## ✨ Features
 
-Core Functionality
+### Core Functionality
 
 · 📊 Interactive Charts: Visual representation of flowering and seeding patterns through bar charts
 · 🔍 Advanced Filtering: Filter species by state/territory, flowering month, seeding month, and plant family
@@ -20,7 +20,7 @@ Core Functionality
 · 📦 Data Export: Export filtered data as JSON for external analysis
 · 🎨 Theme Options: Toggle between light/dark mode and high contrast accessibility modes
 
-Data Management
+### Data Management
 
 · Multiple Datasets: Choose from several pre-loaded datasets:
   · Complete Database
@@ -30,7 +30,7 @@ Data Management
   · Tasmanian Natives
 · Real-time Updates: Charts and species list update instantly when filters change
 
-Accessibility Features
+### Accessibility Features
 
 · Screen reader compatible with proper ARIA labels
 · Keyboard navigation support
@@ -39,7 +39,7 @@ Accessibility Features
 
 ---
 
-🛠️ Technical Stack
+## 🛠️ Technical Stack
 
 Frontend Technologies
 
@@ -51,7 +51,7 @@ Frontend Technologies
 
 ---
 
-📁 File Structure
+## 📁 File Structure
 
 ```
 aus-plant-phenology/
@@ -69,14 +69,14 @@ aus-plant-phenology/
 
 ---
 
-🚀 Getting Started
+## 🚀 Getting Started
 
 Prerequisites
 
 · A modern web browser (Chrome, Firefox, Safari, Edge)
 · Local web server for best performance (optional)
 
-Quick Start
+### Quick Start
 
 1. Clone or download the repository:
    ```bash
@@ -97,7 +97,7 @@ Quick Start
 
 ---
 
-💡 How to Use
+### 💡 How to Use
 
 Basic Navigation
 
@@ -118,7 +118,7 @@ Basic Navigation
    · Click "📥 Export" to download filtered data as JSON
    · Use for external analysis or reporting
 
-Keyboard Shortcuts
+### Keyboard Shortcuts
 
 · Ctrl/Cmd + F: Focus search input
 · Esc: Clear all filters (when search is focused)
@@ -126,7 +126,7 @@ Keyboard Shortcuts
 
 ---
 
-🔧 Data Format
+### 🔧 Data Format
 
 CSV Requirements
 
