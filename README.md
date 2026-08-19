@@ -251,7 +251,7 @@ Manual Testing Checklist
 ☐ Responsive design across devices
 
 ---
-
+<!--
 🤝 Contributing
 
 1. Fork the repository
@@ -268,7 +268,7 @@ Development Guidelines
 · Test thoroughly before submitting
 
 ---
-
+-->
 📝 License
 
 This project is © 2026 Jay Rowley. All rights reserved.
